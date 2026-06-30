@@ -74,6 +74,20 @@ export function getAnswerKey(questionText: string): string | null {
   return null;
 }
 
+// Reference primer whose keywords match the question (concept ground-truth
+// for topics without a per-question answer key, e.g. EV/equity value, LBO).
+export function getReference(questionText: string): { topic: string; content: string } | null {
+  const low = questionText.toLowerCase();
+  const rows = db.prepare("SELECT topic, match_json, content FROM references_doc").all() as { topic: string; match_json: string; content: string }[];
+  for (const r of rows) {
+    const kws = JSON.parse(r.match_json || "[]") as string[];
+    if (kws.some((k) => low.includes(k.toLowerCase()))) {
+      return { topic: r.topic, content: r.content.slice(0, 5000) };
+    }
+  }
+  return null;
+}
+
 // Serve N real, answer-keyed technical questions (variety across topics).
 export function sampleTechnicalQuestions(n: number): GenQuestion[] {
   const rows = db.prepare("SELECT id, question, answer_key, topic_tags, difficulty FROM technical_bank").all() as BankQ[];
@@ -210,7 +224,9 @@ export async function gradeAnswer(opts: {
 
   // If this technical question came from the answer-keyed drill bank, grade
   // correctness STRICTLY against the user's own answer key (ground truth).
+  // Otherwise, ground correctness in the matching reference primer if any.
   const answerKey = opts.kind === "technical" ? getAnswerKey(opts.question) : null;
+  const reference = !answerKey && opts.kind === "technical" ? getReference(opts.question) : null;
 
   const rubricNote: Record<RubricKind, string> = {
     technical: "Flag any answer that is directionally right but could not survive one follow-up. 'defensibility' = survives a probe.",
@@ -223,7 +239,8 @@ export async function gradeAnswer(opts: {
   const system = `You are a tough-but-fair elite Hong Kong IB interviewer grading ONE candidate answer.
 ${INTEGRITY}
 Grade ONLY against the rubric. Be specific and honest — a weak answer gets low scores. If the answer asserts a figure or claim that contradicts the candidate's own profile/story bank, add a flag. If a stated number is something the candidate must be able to defend (e.g. a backtest metric, a valuation output), and the answer doesn't show they can, flag it.${answerKey ? `
-An AUTHORITATIVE ANSWER KEY is provided below. Grade 'correctness' STRICTLY against it: every number and statement-impact the candidate gives must match the key. Where they diverge, score 'correctness' low and say exactly what they got wrong. The model answer you return should follow the key. Default tax rate is 40% unless the question states otherwise.` : ""}
+An AUTHORITATIVE ANSWER KEY is provided below. Grade 'correctness' STRICTLY against it: every number and statement-impact the candidate gives must match the key. Where they diverge, score 'correctness' low and say exactly what they got wrong. The model answer you return should follow the key. Default tax rate is 40% unless the question states otherwise.` : ""}${reference ? `
+AUTHORITATIVE REFERENCE MATERIAL (the candidate's own primer on ${reference.topic}) is provided below. Ground 'correctness' in the definitions and principles there; if the candidate contradicts the reference, score correctness low and cite the right concept. If the reference doesn't cover a point, reason carefully and say if you're uncertain.` : ""}
 Output STRICT JSON only:
 {
  "dimensions": [ ${dims.map((d) => `{"name":"${d}","score":1-5,"justification":"one line"}`).join(", ")} ],
@@ -248,7 +265,7 @@ ${doc("story_bank")}
 
 === QUESTION ===
 ${opts.question}
-${answerKey ? `\n=== AUTHORITATIVE ANSWER KEY (ground truth — grade correctness against this) ===\n${answerKey}\n` : ""}
+${answerKey ? `\n=== AUTHORITATIVE ANSWER KEY (ground truth — grade correctness against this) ===\n${answerKey}\n` : ""}${reference ? `\n=== AUTHORITATIVE REFERENCE — ${reference.topic} (grade correctness against this) ===\n${reference.content}\n` : ""}
 === CANDIDATE'S ANSWER ===
 ${opts.answer || "(no answer given)"}
 

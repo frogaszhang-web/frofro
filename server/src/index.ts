@@ -28,6 +28,7 @@ app.get("/api/status", (_req, res) => {
   const topics = (db.prepare("SELECT COUNT(*) AS n FROM technical_topics").get() as { n: number }).n;
   const realQuestions = (db.prepare("SELECT COUNT(*) AS n FROM real_questions").get() as { n: number }).n;
   const technicalBank = (db.prepare("SELECT COUNT(*) AS n FROM technical_bank").get() as { n: number }).n;
+  const references = (db.prepare("SELECT COUNT(*) AS n FROM references_doc").get() as { n: number }).n;
   const docs = db.prepare("SELECT key, has_todo FROM docs").all() as { key: string; has_todo: number }[];
   res.json({
     banks,
@@ -35,6 +36,7 @@ app.get("/api/status", (_req, res) => {
     topics,
     realQuestions,
     technicalBank,
+    references,
     docsNeedingInput: docs.filter((d) => d.has_todo).map((d) => d.key),
     ai: aiConfig(),
   });

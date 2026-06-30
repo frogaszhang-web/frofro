@@ -12,5 +12,6 @@ data/crucible.db-*
 data/profile.md
 data/story_bank.md
 data/technical_bank.json
+data/references.json
 *.log
 .DS_Store

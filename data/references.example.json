@@ -1,0 +1,19 @@
+{
+  "_meta": {
+    "note": "Reference primers (concept material). Copy to data/references.json (gitignored, local-only) and fill with your own. When a technical question has no exact answer key but a reference's 'match' keywords appear in the question, the grader grounds 'correctness' in that reference's content. Good for concept-heavy topics (EV vs equity value, LBO, DCF) where there's no per-question key.",
+    "schema": {
+      "id": "string (unique)",
+      "topic": "string — shown to the grader (e.g. 'Equity & Enterprise Value')",
+      "match": ["string keywords — if any appears in a question, this reference is used"],
+      "content": "string — the primer text (graded against)"
+    }
+  },
+  "references": [
+    {
+      "id": "ev",
+      "topic": "Equity & Enterprise Value",
+      "match": ["enterprise value", "equity value", "ev/ebitda", "p/e", "minority interest"],
+      "content": "Equity Value = value to common shareholders. Enterprise Value = value to ALL investors (debt + equity + preferred + NCI) for the core operating business; EV = Equity Value + Debt + Preferred + NCI − Cash & non-core assets. Financing events (raising debt, issuing dividends, share issuance to hold as cash) don't change EV because they only move non-core items. EV/EBITDA, EV/EBIT, EV/Revenue pair with EV (capital-structure-neutral); P/E pairs with Equity Value. (Replace this with your own primer text.)"
+    }
+  ]
+}

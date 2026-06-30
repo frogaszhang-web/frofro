@@ -63,6 +63,15 @@ CREATE TABLE IF NOT EXISTS technical_bank (
   difficulty  TEXT
 );
 
+-- Reference primers (concept docs). When a technical question has no exact
+-- answer key but matches a reference's keywords, the grader grounds in it.
+CREATE TABLE IF NOT EXISTS references_doc (
+  id         TEXT PRIMARY KEY,
+  topic      TEXT NOT NULL,
+  match_json TEXT NOT NULL,
+  content    TEXT NOT NULL
+);
+
 -- Versioned story bank (managed in Phase 3).
 CREATE TABLE IF NOT EXISTS stories (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
