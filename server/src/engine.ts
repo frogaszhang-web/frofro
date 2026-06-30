@@ -57,6 +57,47 @@ function weakTopics(): string[] {
   return rows.map((r) => r.topic);
 }
 
+// ---- answer-keyed technical drill bank -------------------------------------
+
+interface BankQ { id: string; question: string; answer_key: string; topic_tags: string; difficulty: string; }
+
+const norm = (s: string) => s.replace(/\s+/g, " ").trim().toLowerCase();
+
+// Authoritative answer key for a question that came from the drill bank.
+export function getAnswerKey(questionText: string): string | null {
+  const target = norm(questionText);
+  const rows = db.prepare("SELECT question, answer_key FROM technical_bank").all() as { question: string; answer_key: string }[];
+  for (const r of rows) {
+    const q = norm(r.question);
+    if (q === target || target.includes(q) || q.includes(target)) return r.answer_key;
+  }
+  return null;
+}
+
+// Serve N real, answer-keyed technical questions (variety across topics).
+export function sampleTechnicalQuestions(n: number): GenQuestion[] {
+  const rows = db.prepare("SELECT id, question, answer_key, topic_tags, difficulty FROM technical_bank").all() as BankQ[];
+  if (rows.length === 0) return [];
+  // shuffle (Fisher-Yates)
+  for (let i = rows.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [rows[i], rows[j]] = [rows[j], rows[i]];
+  }
+  // prefer distinct primary topics for spread
+  const picked: BankQ[] = [];
+  const seenTopic = new Set<string>();
+  for (const r of rows) {
+    const primary = (JSON.parse(r.topic_tags || "[]")[0] ?? "accounting") as string;
+    if (!seenTopic.has(primary)) { picked.push(r); seenTopic.add(primary); }
+    if (picked.length >= n) break;
+  }
+  for (const r of rows) { if (picked.length >= n) break; if (!picked.includes(r)) picked.push(r); }
+  return picked.slice(0, n).map((r) => ({
+    prompt: r.question, kind: "technical" as RubricKind,
+    topicTags: JSON.parse(r.topic_tags || "[]"),
+  }));
+}
+
 const INTEGRITY = `INTEGRITY RULES (non-negotiable):
 - Never invent firm-specific facts (deals, interviewer names, exact processes). Tailor ONLY from the bank's tier/type/region and the notes provided. If you don't have a grounded fact, speak in general patterns, not claims about this specific bank.
 - If you are uncertain about a technical point, say so rather than assert.
@@ -137,12 +178,26 @@ ${real.length ? `=== REAL QUESTIONS this bank/stage has actually used (you MAY r
 Mix the kinds appropriately for the stage. Keep prompts in the interviewer's voice, concise.`;
 
   const arr = await callJSON<GenQuestion[]>("generation", system, user, 1600);
-  return arr.map((q) => ({
+  let questions: GenQuestion[] = arr.map((q) => ({
     prompt: String(q.prompt ?? "").trim(),
     kind: (DIMENSIONS[q.kind as RubricKind] ? q.kind : "behavioral") as RubricKind,
     topicTags: Array.isArray(q.topicTags) ? q.topicTags.map(String) : [],
     persona: q.persona ? String(q.persona) : undefined,
   })).filter((q) => q.prompt);
+
+  // Inject real, answer-keyed technical questions for the live rounds so
+  // technical grading is grounded in the candidate's own answer keys (§7).
+  const realTech = opts.stage === "hirevue" ? 0 : 2;
+  if (realTech > 0) {
+    const reals = sampleTechnicalQuestions(realTech);
+    if (opts.stage === "superday") {
+      const personas = ["Skeptical VP", "Stress-testing MD"];
+      reals.forEach((r, i) => (r.persona = personas[i % personas.length]));
+    }
+    // keep total at `count`: drop trailing model questions to make room
+    questions = [...questions.slice(0, Math.max(0, count - reals.length)), ...reals];
+  }
+  return questions;
 }
 
 // ---- grading (§6) ----------------------------------------------------------
@@ -152,6 +207,10 @@ export async function gradeAnswer(opts: {
 }): Promise<Grade> {
   const bank = opts.bankName ? getBank(opts.bankName) : null;
   const dims = DIMENSIONS[opts.kind];
+
+  // If this technical question came from the answer-keyed drill bank, grade
+  // correctness STRICTLY against the user's own answer key (ground truth).
+  const answerKey = opts.kind === "technical" ? getAnswerKey(opts.question) : null;
 
   const rubricNote: Record<RubricKind, string> = {
     technical: "Flag any answer that is directionally right but could not survive one follow-up. 'defensibility' = survives a probe.",
@@ -163,7 +222,8 @@ export async function gradeAnswer(opts: {
 
   const system = `You are a tough-but-fair elite Hong Kong IB interviewer grading ONE candidate answer.
 ${INTEGRITY}
-Grade ONLY against the rubric. Be specific and honest — a weak answer gets low scores. If the answer asserts a figure or claim that contradicts the candidate's own profile/story bank, add a flag. If a stated number is something the candidate must be able to defend (e.g. a backtest metric, a valuation output), and the answer doesn't show they can, flag it.
+Grade ONLY against the rubric. Be specific and honest — a weak answer gets low scores. If the answer asserts a figure or claim that contradicts the candidate's own profile/story bank, add a flag. If a stated number is something the candidate must be able to defend (e.g. a backtest metric, a valuation output), and the answer doesn't show they can, flag it.${answerKey ? `
+An AUTHORITATIVE ANSWER KEY is provided below. Grade 'correctness' STRICTLY against it: every number and statement-impact the candidate gives must match the key. Where they diverge, score 'correctness' low and say exactly what they got wrong. The model answer you return should follow the key. Default tax rate is 40% unless the question states otherwise.` : ""}
 Output STRICT JSON only:
 {
  "dimensions": [ ${dims.map((d) => `{"name":"${d}","score":1-5,"justification":"one line"}`).join(", ")} ],
@@ -188,7 +248,7 @@ ${doc("story_bank")}
 
 === QUESTION ===
 ${opts.question}
-
+${answerKey ? `\n=== AUTHORITATIVE ANSWER KEY (ground truth — grade correctness against this) ===\n${answerKey}\n` : ""}
 === CANDIDATE'S ANSWER ===
 ${opts.answer || "(no answer given)"}
 

@@ -51,6 +51,18 @@ CREATE TABLE IF NOT EXISTS real_questions (
   date      TEXT
 );
 
+-- Answer-keyed technical drill bank (from the user's accounting prep PDFs).
+-- Served as technical questions AND used as grading ground truth.
+CREATE TABLE IF NOT EXISTS technical_bank (
+  id          TEXT PRIMARY KEY,
+  source      TEXT NOT NULL,
+  number      INTEGER,
+  question    TEXT NOT NULL,
+  answer_key  TEXT NOT NULL,
+  topic_tags  TEXT,
+  difficulty  TEXT
+);
+
 -- Versioned story bank (managed in Phase 3).
 CREATE TABLE IF NOT EXISTS stories (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,

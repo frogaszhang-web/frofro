@@ -121,6 +121,28 @@ function seedRealQuestions(): number {
   return count;
 }
 
+function seedTechnicalBank(): number {
+  const file = path.join(DATA_DIR, "technical_bank.json");
+  if (!fs.existsSync(file)) return 0;
+  const raw = JSON.parse(fs.readFileSync(file, "utf8")) as { questions: any[] };
+  db.prepare("DELETE FROM technical_bank").run();
+  const insert = db.prepare(`
+    INSERT INTO technical_bank (id, source, number, question, answer_key, topic_tags, difficulty)
+    VALUES (@id, @source, @number, @question, @answer_key, @topic_tags, @difficulty)
+  `);
+  const tx = db.transaction((items: any[]) => {
+    for (const q of items) {
+      insert.run({
+        id: q.id, source: q.source, number: q.number ?? null,
+        question: q.question, answer_key: q.answerKey ?? "",
+        topic_tags: JSON.stringify(q.topicTags ?? []), difficulty: q.difficulty ?? "medium",
+      });
+    }
+  });
+  tx(raw.questions);
+  return raw.questions.length;
+}
+
 export function seedAll() {
   const banks = seedBanks();
   seedDoc("profile.md", "profile");
@@ -128,14 +150,15 @@ export function seedAll() {
   seedDoc("hirevue_notes.md", "hirevue_notes");
   const topics = seedTopics();
   const rq = seedRealQuestions();
-  return { banks, topics, realQuestions: rq };
+  const techBank = seedTechnicalBank();
+  return { banks, topics, realQuestions: rq, techBank };
 }
 
 // Run directly: `npm run seed`
 if (import.meta.url === `file://${process.argv[1]}`) {
   const r = seedAll();
   console.log(
-    `Seeded: ${r.banks} banks, ${r.topics} technical topics, ${r.realQuestions} real questions.`,
+    `Seeded: ${r.banks} banks, ${r.topics} technical topics, ${r.realQuestions} real questions, ${r.techBank} answer-keyed drill questions.`,
   );
   console.log("Docs seeded: profile, story_bank, hirevue_notes.");
 }

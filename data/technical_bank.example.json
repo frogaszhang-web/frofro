@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "note": "Answer-keyed technical drill bank. Copy to data/technical_bank.json (gitignored, local-only) and fill with your own Q&A. The app serves these as technical questions in first-round/superday rounds AND grades your answer strictly against 'answerKey' as ground truth.",
+    "tax_rate_default": "state the assumed tax rate in the question; the grader defaults to 40% otherwise",
+    "schema": {
+      "id": "string (unique)",
+      "source": "string (e.g. 'Accounting Part 1')",
+      "number": "int (optional)",
+      "question": "string",
+      "answerKey": "string — the worked solution / ground truth",
+      "topicTags": ["string"],
+      "difficulty": "easy | medium | hard"
+    }
+  },
+  "questions": [
+    {
+      "id": "sample-1",
+      "source": "Sample",
+      "number": 1,
+      "question": "A company delivers $25 worth of product to a customer for a price of $100, but the customer has not yet paid. Walk through the three statements at delivery, then when the $100 is collected. Assume a 40% tax rate.",
+      "answerKey": "At delivery: IS — Revenue +100, COGS +25, Pre-tax +75, Net income +45. CFS — Net income +45, less AR increase 100, CFO -55, net change in cash -55. BS — Cash -55, AR +100, Inventory -25; Retained earnings +45 (assets +20 = L+E +20 via RE +45 and cash already in). When collected: IS no change; CFS cash +100 (AR decrease), CFO +100; BS cash +100, AR -100, balances.",
+      "topicTags": ["revenue recognition / working capital", "three-statement linkage"],
+      "difficulty": "medium"
+    }
+  ]
+}

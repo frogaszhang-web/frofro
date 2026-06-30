@@ -8,7 +8,7 @@ export interface Bank {
 
 export interface Status {
   banks: number; verifiedBanks: number; topics: number; realQuestions: number;
-  docsNeedingInput: string[];
+  technicalBank?: number; docsNeedingInput: string[];
   ai: { provider: string; grading_model: string; generation_model: string; key_present: boolean };
 }
 

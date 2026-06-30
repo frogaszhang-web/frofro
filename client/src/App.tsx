@@ -76,8 +76,8 @@ function Home({ status, banks }: { status: Status | null; banks: Bank[] }) {
       {status && (
         <section className="grid gap-4 sm:grid-cols-4">
           <Stat label="Banks seeded" value={`${status.banks}`} sub={`${status.verifiedBanks} verified`} />
+          <Stat label="Drill bank" value={`${status.technicalBank ?? 0}`} sub="answer-keyed Qs" />
           <Stat label="Technical topics" value={`${status.topics}`} />
-          <Stat label="Real questions" value={`${status.realQuestions}`} />
           <Stat label="AI provider" value={status.ai.provider} sub={status.ai.key_present ? "key set" : "no key"} />
         </section>
       )}

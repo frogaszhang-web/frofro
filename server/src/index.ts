@@ -14,7 +14,7 @@ app.use(express.json({ limit: "1mb" }));
 const bankCount = (db.prepare("SELECT COUNT(*) AS n FROM banks").get() as { n: number }).n;
 if (bankCount === 0) {
   const r = seedAll();
-  console.log(`[seed] first boot: ${r.banks} banks, ${r.topics} topics, ${r.realQuestions} real questions`);
+  console.log(`[seed] first boot: ${r.banks} banks, ${r.topics} topics, ${r.realQuestions} real questions, ${r.techBank} answer-keyed drill questions`);
 }
 
 app.get("/api/health", (_req, res) => {
@@ -27,12 +27,14 @@ app.get("/api/status", (_req, res) => {
   const verifiedBanks = (db.prepare("SELECT COUNT(*) AS n FROM banks WHERE verified=1").get() as { n: number }).n;
   const topics = (db.prepare("SELECT COUNT(*) AS n FROM technical_topics").get() as { n: number }).n;
   const realQuestions = (db.prepare("SELECT COUNT(*) AS n FROM real_questions").get() as { n: number }).n;
+  const technicalBank = (db.prepare("SELECT COUNT(*) AS n FROM technical_bank").get() as { n: number }).n;
   const docs = db.prepare("SELECT key, has_todo FROM docs").all() as { key: string; has_todo: number }[];
   res.json({
     banks,
     verifiedBanks,
     topics,
     realQuestions,
+    technicalBank,
     docsNeedingInput: docs.filter((d) => d.has_todo).map((d) => d.key),
     ai: aiConfig(),
   });

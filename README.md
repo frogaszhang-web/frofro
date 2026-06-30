@@ -21,6 +21,7 @@ npm install                              # installs server + client workspaces
 cp .env.example .env                      # then edit .env (add your API key)
 cp data/profile.example.md data/profile.md          # personal files are local-only
 cp data/story_bank.example.md data/story_bank.md     # (gitignored) — fill them in
+cp data/technical_bank.example.json data/technical_bank.json  # your answer-keyed Qs (optional)
 npm run seed                             # loads /data into the local SQLite db
 npm run dev                              # starts server (:4000) + client (:5173)
 ```
@@ -66,6 +67,7 @@ These plain files are seeded into SQLite by `npm run seed`. Edit them, then re-s
 | `profile.md` | Your resume/background. **Local-only (gitignored)** — copy from `profile.example.md`. | **You** |
 | `story_bank.md` | STAR stories, Why-X answers, the CATL pitch, resume-claim defenses. **Local-only (gitignored)** — copy from `story_bank.example.md`. | **You** |
 | `technical_topics.md` | Technicals you've covered + mastery per line. | You refine |
+| `technical_bank.json` | Answer-keyed technical questions (your accounting prep). Served in live rounds and used as **grading ground truth**. **Local-only (gitignored)** — copy from `technical_bank.example.json`. | **You** |
 | `hirevue_notes.md` | JPM HireVue format (3 Q, 30s prep / 120s answer, no re-records). | Mostly filled |
 | `real_questions.md` | Real questions you/peers hit. Empty is fine. | You, if available |
 
@@ -103,9 +105,11 @@ CATL listing date / JPM's bookrunner role) are flagged, not asserted.
   fit/behavioral rubric, with the exact follow-up + a model answer.
 - **First round (B)** — live/conversational. Per answer: graded immediately, then one
   **adaptive follow-up** (the one-sentence-deeper drill) that you must defend; the tool
-  judges whether it survived and flags the topic if not.
+  judges whether it survived and flags the topic if not. Includes **real, answer-keyed
+  technical questions** from your drill bank — graded strictly against your answer keys.
 - **Superday (C)** — multi-persona (friendly analyst / skeptical VP / stress-testing MD),
-  includes your CATL deal walk-through, a brainteaser, and chained technicals.
+  includes your CATL deal walk-through, a brainteaser, chained technicals, and the same
+  answer-keyed technical drilling.
 - **Resume drill** — auto-generates the single hardest question on every claim in your
   resume + story bank, grades your defense, and checks consistency with stored material.
 - **Progress** — readiness by stage and by bank, technical weak-spots, and a spaced-

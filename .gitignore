@@ -8,8 +8,9 @@ dist/
 data/crucible.db
 data/crucible.db-*
 
-# Personal data — kept local-only. The *.example.md files document the format.
+# Personal data — kept local-only. The *.example files document the format.
 data/profile.md
 data/story_bank.md
+data/technical_bank.json
 *.log
 .DS_Store
