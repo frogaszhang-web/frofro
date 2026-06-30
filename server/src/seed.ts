@@ -47,7 +47,17 @@ function seedBanks(): number {
 }
 
 function seedDoc(file: string, key: string) {
-  const content = readFile(file);
+  // Personal files (profile.md, story_bank.md) are gitignored. On a fresh clone
+  // they won't exist yet — fall back to the committed .example template.
+  let path_ = path.join(DATA_DIR, file);
+  if (!fs.existsSync(path_)) {
+    const example = path.join(DATA_DIR, file.replace(/\.md$/, ".example.md"));
+    if (fs.existsSync(example)) {
+      console.warn(`[seed] ${file} not found — seeding from ${file.replace(/\.md$/, ".example.md")} (copy it to ${file} and fill in your data).`);
+      path_ = example;
+    }
+  }
+  const content = fs.readFileSync(path_, "utf8");
   const hasTodo = /\[TODO|\[CONFIRM|\[VERIFY/i.test(content) ? 1 : 0;
   db.prepare(`
     INSERT INTO docs (key, content, has_todo, updated_at)

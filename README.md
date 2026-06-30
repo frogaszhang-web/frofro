@@ -4,11 +4,11 @@ A local-first web app that drills you across the **entire** Hong Kong IB recruit
 funnel — async video screen, live first round, and superday — for every bank in your
 tracker, tailored to your resume, story bank, and the HK cross-border M&A market.
 
-> **Status: v1 scaffold (Phase 2 complete).** The data layer, all 32 verified banks,
-> the model-agnostic AI layer, and a runnable client/server are in place. The graded
-> stage runners (HireVue / first round / superday), the defensibility drill, and the
-> resume-claim interrogation are built in Phase 3 — **after** you fill the personal
-> `[TODO]` fields in `/data`.
+> **Status: v1 functional (Phase 3 complete).** All three stage runners
+> (HireVue / first round / superday), the evaluation engine + rubrics, the
+> one-sentence-deeper defensibility drill, the resume-claim interrogation, and the
+> progress/readiness dashboard are built. v2 (webcam capture, richer SRS, prep-report
+> export, multi-user) is scaffolded in the data layer but not built.
 
 ---
 
@@ -17,13 +17,17 @@ tracker, tailored to your resume, story bank, and the HK cross-border M&A market
 Requires **Node 20+** and **npm**. From the repo root:
 
 ```bash
-npm install              # installs server + client workspaces
-cp .env.example .env      # then edit .env (see below)
-npm run seed             # loads /data into the local SQLite db
-npm run dev              # starts server (:4000) + client (:5173)
+npm install                              # installs server + client workspaces
+cp .env.example .env                      # then edit .env (add your API key)
+cp data/profile.example.md data/profile.md          # personal files are local-only
+cp data/story_bank.example.md data/story_bank.md     # (gitignored) — fill them in
+npm run seed                             # loads /data into the local SQLite db
+npm run dev                              # starts server (:4000) + client (:5173)
 ```
 
-Open **http://localhost:5173**.
+Open **http://localhost:5173**. (`profile.md`/`story_bank.md` are gitignored so your
+personal data never leaves your machine; if you skip the `cp` step the seeder falls
+back to the `.example` templates.)
 
 ### One-command dev
 `npm run dev` runs the Express API and the Vite client together. The client proxies
@@ -59,8 +63,8 @@ These plain files are seeded into SQLite by `npm run seed`. Edit them, then re-s
 | File | What it holds | Who fills it |
 |---|---|---|
 | `banks.json` | The 32 banks (tier, focus, **verified** recruiting process, Mandarin flag, style notes). Pre-built from your tracker. | Pre-filled; verify ⚠️ entries |
-| `profile.md` | Your resume/background. Has `[TODO]`/`[CONFIRM]`. | **You** |
-| `story_bank.md` | STAR stories, Why-X answers, the CATL pitch, resume-claim defenses. Has `[TODO]`. | **You** |
+| `profile.md` | Your resume/background. **Local-only (gitignored)** — copy from `profile.example.md`. | **You** |
+| `story_bank.md` | STAR stories, Why-X answers, the CATL pitch, resume-claim defenses. **Local-only (gitignored)** — copy from `story_bank.example.md`. | **You** |
 | `technical_topics.md` | Technicals you've covered + mastery per line. | You refine |
 | `hirevue_notes.md` | JPM HireVue format (3 Q, 30s prep / 120s answer, no re-records). | Mostly filled |
 | `real_questions.md` | Real questions you/peers hit. Empty is fine. | You, if available |
@@ -92,14 +96,30 @@ CATL listing date / JPM's bookrunner role) are flagged, not asserted.
 
 ---
 
+## The five modes (top nav)
+
+- **HireVue (A)** — async screen. Per question: 30s prep → 120s answer, one-shot, no
+  re-records. Mic (Web Speech) or text. Grades all answers at the end against the
+  fit/behavioral rubric, with the exact follow-up + a model answer.
+- **First round (B)** — live/conversational. Per answer: graded immediately, then one
+  **adaptive follow-up** (the one-sentence-deeper drill) that you must defend; the tool
+  judges whether it survived and flags the topic if not.
+- **Superday (C)** — multi-persona (friendly analyst / skeptical VP / stress-testing MD),
+  includes your CATL deal walk-through, a brainteaser, and chained technicals.
+- **Resume drill** — auto-generates the single hardest question on every claim in your
+  resume + story bank, grades your defense, and checks consistency with stored material.
+- **Progress** — readiness by stage and by bank, technical weak-spots, and a spaced-
+  repetition queue that resurfaces low-scoring answers.
+
 ## Smoke test
 
 ```bash
 npm run smoke
 ```
 
-Confirms the data seeds and (if `ANTHROPIC_API_KEY` is set) does one live AI round-trip.
-Without a key it seeds and reports config, skipping the API call.
+Confirms the data seeds and (with a key set) runs one **full graded attempt** —
+generate a HireVue question → grade an answer → run the defensibility probe.
+Without a key it seeds and reports config, skipping the API calls.
 
 ---
 

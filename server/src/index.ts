@@ -4,6 +4,7 @@ import cors from "cors";
 import db from "./db.js";
 import { seedAll } from "./seed.js";
 import { aiConfig } from "./ai.js";
+import { router as apiRouter } from "./routes.js";
 
 const app = express();
 app.use(cors());
@@ -57,7 +58,8 @@ app.get("/api/topics", (_req, res) => {
   res.json(db.prepare("SELECT * FROM technical_topics ORDER BY category, id").all());
 });
 
-// Stage runners + grading mount here in Phase 3 (routes/session.ts, grade.ts, ...).
+// Stage runners, grading, defensibility, resume interrogation, progress.
+app.use("/api", apiRouter);
 
 const PORT = Number(process.env.PORT ?? 4000);
 app.listen(PORT, () => {
